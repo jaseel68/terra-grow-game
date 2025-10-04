@@ -146,26 +146,52 @@ const Index = () => {
                 {
                   icon: Satellite,
                   title: "Real NASA Data",
-                  description: "Leverage actual satellite imagery and climate observations",
+                  description: "Leverage actual satellite imagery and climate observations from NASA's Earth Science Division",
+                  details: [
+                    "MODIS satellite imagery for real-time land monitoring",
+                    "POWER climate data including temperature, precipitation, and humidity",
+                    "GRACE water availability measurements",
+                    "GPM precipitation data for accurate rainfall tracking"
+                  ]
                 },
                 {
                   icon: Sprout,
                   title: "Sustainable Practices",
-                  description: "Learn eco-friendly farming methods that protect our planet",
+                  description: "Learn eco-friendly farming methods that protect our planet and ensure long-term food security",
+                  details: [
+                    "Water conservation through precision irrigation",
+                    "Soil health management and crop rotation",
+                    "Organic fertilization techniques",
+                    "Climate-adaptive farming strategies"
+                  ]
                 },
                 {
                   icon: Play,
                   title: "Interactive Learning",
-                  description: "Hands-on experience with farming decisions and their impacts",
+                  description: "Hands-on experience with farming decisions and their environmental impacts",
+                  details: [
+                    "Manage resources with real-time feedback",
+                    "See immediate effects of your decisions",
+                    "Track sustainability and efficiency metrics",
+                    "Learn through experimentation and adaptation"
+                  ]
                 },
               ].map((feature, idx) => (
                 <div
                   key={idx}
                   className="p-6 rounded-xl bg-card/80 backdrop-blur-sm border border-border hover:shadow-[var(--shadow-soft)] transition-all duration-300"
                 >
-                  <feature.icon className="w-8 h-8 text-primary mb-3" />
+                  <feature.icon className="w-8 h-8 text-primary mb-4" />
                   <h3 className="text-lg font-semibold mb-2">{feature.title}</h3>
-                  <p className="text-sm text-muted-foreground">{feature.description}</p>
+                  <p className="text-sm text-muted-foreground mb-4">{feature.description}</p>
+                  <ul className="space-y-2">
+                    {feature.details.map((detail, detailIdx) => (
+                      <li key={detailIdx} className="text-xs text-muted-foreground flex items-start gap-2">
+                        <span className="text-primary mt-1">•</span>
+                        <span>{detail}</span>
+                      </li>
+                    ))}
+                  </ul>
                 </div>
               ))}
             </div>
