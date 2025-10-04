@@ -1,10 +1,14 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Satellite, Sprout, Play } from "lucide-react";
+import { Satellite, Sprout, Play, Home } from "lucide-react";
 import GameField from "@/components/GameField";
 import ControlPanel from "@/components/ControlPanel";
 import ClimateData from "@/components/ClimateData";
 import SustainabilityMetrics from "@/components/SustainabilityMetrics";
+import LivestockPanel from "@/components/LivestockPanel";
+import PastureField from "@/components/PastureField";
+import WeatherEvents from "@/components/WeatherEvents";
+import LivestockMetrics from "@/components/LivestockMetrics";
 import heroFarm from "@/assets/hero-farm.jpg";
 
 interface Plot {
@@ -14,10 +18,24 @@ interface Plot {
   fertilized: boolean;
 }
 
+interface Pasture {
+  id: number;
+  ndvi: number;
+  grazingLoad: number;
+  health: number;
+}
+
+interface WeatherEvent {
+  type: "drought" | "rainfall" | "normal" | "storm";
+  severity: "low" | "medium" | "high";
+  message: string;
+}
+
 const Index = () => {
   const [gameStarted, setGameStarted] = useState(false);
   const [selectedPlot, setSelectedPlot] = useState<number | null>(null);
-  const [credits, setCredits] = useState(100);
+  const [selectedPasture, setSelectedPasture] = useState<number | null>(null);
+  const [credits, setCredits] = useState(150);
   const [plots, setPlots] = useState<Plot[]>(
     Array.from({ length: 12 }, (_, i) => ({
       id: i,
@@ -26,6 +44,29 @@ const Index = () => {
       fertilized: false,
     }))
   );
+
+  // Livestock management state
+  const [herdSize, setHerdSize] = useState(0);
+  const [livestockHealth, setLivestockHealth] = useState(100);
+  const [feedLevel, setFeedLevel] = useState(80);
+  const [waterAvailability, setWaterAvailability] = useState(70);
+
+  // Pasture state with NDVI
+  const [pastures, setPastures] = useState<Pasture[]>(
+    Array.from({ length: 9 }, (_, i) => ({
+      id: i,
+      ndvi: 0.5 + Math.random() * 0.3,
+      grazingLoad: 0,
+      health: 70,
+    }))
+  );
+
+  // Weather event state
+  const [weatherEvent, setWeatherEvent] = useState<WeatherEvent>({
+    type: "normal",
+    severity: "low",
+    message: "Clear skies and moderate temperatures",
+  });
 
   // Calculate metrics based on plots
   const calculateMetrics = () => {
@@ -40,13 +81,37 @@ const Index = () => {
     };
   };
 
+  // Calculate livestock metrics
+  const calculateLivestockMetrics = () => {
+    const avgNDVI = pastures.reduce((sum, p) => sum + p.ndvi, 0) / pastures.length;
+    const grazingBalance = herdSize > 0 ? Math.max(0, 100 - (herdSize * 8)) : 100;
+    
+    return {
+      animalWelfare: Math.min(100, Math.round((livestockHealth * 0.5) + (feedLevel * 0.25) + (waterAvailability * 0.25))),
+      resourceEfficiency: Math.min(100, Math.round((waterAvailability * 0.4) + (feedLevel * 0.3) + grazingBalance * 0.3)),
+      pastureHealth: Math.min(100, Math.round(avgNDVI * 100)),
+      overallSustainability: 0,
+    };
+  };
+
   const [metrics, setMetrics] = useState(calculateMetrics());
+  const [livestockMetrics, setLivestockMetrics] = useState(() => {
+    const initial = calculateLivestockMetrics();
+    initial.overallSustainability = Math.round((initial.animalWelfare + initial.resourceEfficiency + initial.pastureHealth) / 3);
+    return initial;
+  });
 
   useEffect(() => {
     setMetrics(calculateMetrics());
   }, [plots]);
 
-  // Passive health decay
+  useEffect(() => {
+    const metrics = calculateLivestockMetrics();
+    metrics.overallSustainability = Math.round((metrics.animalWelfare + metrics.resourceEfficiency + metrics.pastureHealth) / 3);
+    setLivestockMetrics(metrics);
+  }, [livestockHealth, feedLevel, waterAvailability, herdSize, pastures]);
+
+  // Passive health decay for crops and livestock
   useEffect(() => {
     if (!gameStarted) return;
     
@@ -58,18 +123,83 @@ const Index = () => {
           waterLevel: Math.max(0, plot.waterLevel - 1),
         }))
       );
+
+      // Livestock passive decay
+      if (herdSize > 0) {
+        setLivestockHealth(prev => Math.max(0, prev - 1.5));
+        setFeedLevel(prev => Math.max(0, prev - (herdSize * 0.8)));
+        setWaterAvailability(prev => Math.max(0, prev - (herdSize * 0.6)));
+      }
+
+      // Weather event effects on pastures
+      setPastures(prev => prev.map(p => ({
+        ...p,
+        ndvi: Math.max(0.1, Math.min(1.0, p.ndvi + (Math.random() - 0.5) * 0.02)),
+        health: Math.max(0, p.health - (p.grazingLoad > 0 ? 0.5 : 0.1)),
+      })));
     }, 2000);
 
     return () => clearInterval(interval);
-  }, [gameStarted]);
+  }, [gameStarted, herdSize]);
 
   // Credit regeneration
   useEffect(() => {
     if (!gameStarted) return;
     
     const interval = setInterval(() => {
-      setCredits(prev => Math.min(200, prev + 5));
+      setCredits(prev => Math.min(250, prev + 5));
     }, 3000);
+
+    return () => clearInterval(interval);
+  }, [gameStarted]);
+
+  // Dynamic weather events
+  useEffect(() => {
+    if (!gameStarted) return;
+
+    const interval = setInterval(() => {
+      const rand = Math.random();
+      let newEvent: WeatherEvent;
+
+      if (rand < 0.15) {
+        newEvent = {
+          type: "drought",
+          severity: "high",
+          message: "Extended dry period detected. Water conservation critical.",
+        };
+      } else if (rand < 0.3) {
+        newEvent = {
+          type: "rainfall",
+          severity: "medium",
+          message: "Heavy rainfall replenishing water sources and pastures.",
+        };
+      } else if (rand < 0.4) {
+        newEvent = {
+          type: "storm",
+          severity: "high",
+          message: "Severe weather warning. Protect livestock and secure resources.",
+        };
+      } else {
+        newEvent = {
+          type: "normal",
+          severity: "low",
+          message: "Optimal weather conditions for farming operations.",
+        };
+      }
+
+      setWeatherEvent(newEvent);
+
+      // Apply weather effects
+      if (newEvent.type === "drought") {
+        setWaterAvailability(prev => Math.max(0, prev - 15));
+        setPastures(prev => prev.map(p => ({ ...p, ndvi: Math.max(0.1, p.ndvi - 0.05) })));
+      } else if (newEvent.type === "rainfall") {
+        setWaterAvailability(prev => Math.min(100, prev + 20));
+        setPastures(prev => prev.map(p => ({ ...p, ndvi: Math.min(1.0, p.ndvi + 0.08) })));
+      } else if (newEvent.type === "storm") {
+        setLivestockHealth(prev => Math.max(0, prev - 10));
+      }
+    }, 15000);
 
     return () => clearInterval(interval);
   }, [gameStarted]);
@@ -98,6 +228,40 @@ const Index = () => {
           : plot
       )
     );
+  };
+
+  // Livestock management handlers
+  const handleHerdChange = (change: number) => {
+    if (change > 0 && credits >= 50) {
+      setCredits(prev => prev - 50);
+      setHerdSize(prev => prev + 1);
+      if (selectedPasture !== null) {
+        setPastures(prev => prev.map(p => 
+          p.id === selectedPasture ? { ...p, grazingLoad: p.grazingLoad + 1 } : p
+        ));
+      }
+    } else if (change < 0 && herdSize > 0) {
+      setHerdSize(prev => prev - 1);
+      if (selectedPasture !== null) {
+        setPastures(prev => prev.map(p => 
+          p.id === selectedPasture && p.grazingLoad > 0 ? { ...p, grazingLoad: p.grazingLoad - 1 } : p
+        ));
+      }
+    }
+  };
+
+  const handleFeed = () => {
+    if (credits < 15 || feedLevel >= 100) return;
+    setCredits(prev => prev - 15);
+    setFeedLevel(prev => Math.min(100, prev + 40));
+    setLivestockHealth(prev => Math.min(100, prev + 10));
+  };
+
+  const handleWater = () => {
+    if (credits < 10 || waterAvailability >= 100) return;
+    setCredits(prev => prev - 10);
+    setWaterAvailability(prev => Math.min(100, prev + 30));
+    setLivestockHealth(prev => Math.min(100, prev + 5));
   };
 
   if (!gameStarted) {
@@ -155,14 +319,14 @@ const Index = () => {
                   ]
                 },
                 {
-                  icon: Sprout,
-                  title: "Sustainable Practices",
-                  description: "Learn eco-friendly farming methods that protect our planet and ensure long-term food security",
+                  icon: Home,
+                  title: "Livestock Management",
+                  description: "Master sustainable livestock practices using data-driven decision making",
                   details: [
-                    "Water conservation through precision irrigation",
-                    "Soil health management and crop rotation",
-                    "Organic fertilization techniques",
-                    "Climate-adaptive farming strategies"
+                    "NDVI-based pasture health monitoring",
+                    "Optimal herd sizing and grazing rotation",
+                    "Water and feed resource optimization",
+                    "Climate adaptation for animal welfare"
                   ]
                 },
                 {
@@ -223,8 +387,13 @@ const Index = () => {
       {/* Game Interface */}
       <main className="container mx-auto px-4 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Left Column - Game Field */}
+          {/* Left Column - Fields and Climate */}
           <div className="lg:col-span-2 space-y-6">
+            <PastureField
+              pastures={pastures}
+              selectedPasture={selectedPasture}
+              onPastureClick={setSelectedPasture}
+            />
             <GameField
               plots={plots}
               onPlotClick={setSelectedPlot}
@@ -235,12 +404,24 @@ const Index = () => {
 
           {/* Right Column - Controls and Metrics */}
           <div className="space-y-6">
+            <WeatherEvents currentEvent={weatherEvent} />
+            <LivestockPanel
+              herdSize={herdSize}
+              onHerdChange={handleHerdChange}
+              onFeed={handleFeed}
+              onWater={handleWater}
+              credits={credits}
+              livestockHealth={livestockHealth}
+              waterAvailability={waterAvailability}
+              feedLevel={feedLevel}
+            />
             <ControlPanel
               selectedPlot={selectedPlot}
               onIrrigate={handleIrrigate}
               onFertilize={handleFertilize}
               credits={credits}
             />
+            <LivestockMetrics {...livestockMetrics} />
             <SustainabilityMetrics {...metrics} />
           </div>
         </div>

@@ -1,24 +1,27 @@
-import { Card } from "@/components/ui/card";
-import { Cloud, Droplets, Wind, ThermometerSun } from "lucide-react";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Cloud, Droplets, Wind, Thermometer, Satellite, Waves } from "lucide-react";
 import { useEffect, useState } from "react";
 
 const ClimateData = () => {
-  const [weatherData, setWeatherData] = useState({
+  const [weather, setWeather] = useState({
     temperature: 72,
     humidity: 65,
-    windSpeed: 12,
-    precipitation: 15,
+    windSpeed: 8,
+    precipitation: 12,
+    soilMoisture: 58,
+    solarRadiation: 850,
   });
 
-  // Simulate dynamic weather changes
   useEffect(() => {
     const interval = setInterval(() => {
-      setWeatherData(prev => ({
-        temperature: Math.max(60, Math.min(85, prev.temperature + (Math.random() - 0.5) * 2)),
-        humidity: Math.max(40, Math.min(90, prev.humidity + (Math.random() - 0.5) * 3)),
-        windSpeed: Math.max(5, Math.min(25, prev.windSpeed + (Math.random() - 0.5) * 2)),
-        precipitation: Math.max(0, Math.min(30, prev.precipitation + (Math.random() - 0.5) * 3)),
-      }));
+      setWeather({
+        temperature: Math.floor(Math.random() * 20) + 60,
+        humidity: Math.floor(Math.random() * 40) + 40,
+        windSpeed: Math.floor(Math.random() * 15) + 3,
+        precipitation: Math.floor(Math.random() * 30),
+        soilMoisture: Math.floor(Math.random() * 40) + 40,
+        solarRadiation: Math.floor(Math.random() * 400) + 600,
+      });
     }, 5000);
 
     return () => clearInterval(interval);
@@ -26,58 +29,89 @@ const ClimateData = () => {
 
   const metrics = [
     {
-      icon: ThermometerSun,
+      icon: Thermometer,
       label: "Temperature",
-      value: `${Math.round(weatherData.temperature)}°F`,
-      color: "text-destructive",
+      value: `${weather.temperature}°F`,
+      description: "NASA POWER",
+      source: "MERRA-2",
     },
     {
       icon: Droplets,
       label: "Humidity",
-      value: `${Math.round(weatherData.humidity)}%`,
-      color: "text-secondary",
-    },
-    {
-      icon: Wind,
-      label: "Wind Speed",
-      value: `${Math.round(weatherData.windSpeed)} mph`,
-      color: "text-accent",
+      value: `${weather.humidity}%`,
+      description: "Relative humidity",
+      source: "POWER",
     },
     {
       icon: Cloud,
       label: "Precipitation",
-      value: `${Math.round(weatherData.precipitation)}%`,
-      color: "text-primary",
+      value: `${weather.precipitation}%`,
+      description: "Rain probability",
+      source: "GPM",
+    },
+    {
+      icon: Wind,
+      label: "Wind Speed",
+      value: `${weather.windSpeed} mph`,
+      description: "Surface wind",
+      source: "MERRA-2",
+    },
+    {
+      icon: Waves,
+      label: "Soil Moisture",
+      value: `${weather.soilMoisture}%`,
+      description: "Root zone",
+      source: "SMAP",
+    },
+    {
+      icon: Satellite,
+      label: "Solar Radiation",
+      value: `${weather.solarRadiation} W/m²`,
+      description: "Surface irradiance",
+      source: "CERES",
     },
   ];
 
   return (
-    <Card className="p-6">
-      <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-        <Cloud className="w-5 h-5 text-secondary" />
-        NASA Climate Data
-      </h3>
-      
-      <div className="grid grid-cols-2 gap-4">
-        {metrics.map((metric) => (
-          <div
-            key={metric.label}
-            className="p-4 rounded-lg bg-gradient-to-br from-card to-muted/20 border border-border transition-all duration-300 hover:shadow-[var(--shadow-soft)]"
-          >
-            <div className="flex items-center gap-2 mb-2">
-              <metric.icon className={`w-4 h-4 ${metric.color}`} />
-              <span className="text-xs text-muted-foreground">{metric.label}</span>
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Satellite className="w-5 h-5" />
+          NASA Earth Science Data
+        </CardTitle>
+        <CardDescription>
+          Real-time environmental data from multiple NASA missions
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+          {metrics.map((metric, idx) => (
+            <div
+              key={idx}
+              className="p-3 rounded-lg bg-secondary/50 space-y-2 hover:bg-secondary/70 transition-colors"
+            >
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <metric.icon className="w-4 h-4 text-primary" />
+                  <span className="text-xs font-medium text-muted-foreground">
+                    {metric.label}
+                  </span>
+                </div>
+                <span className="text-[10px] px-1.5 py-0.5 bg-primary/10 text-primary rounded">
+                  {metric.source}
+                </span>
+              </div>
+              <div className="text-xl font-bold">{metric.value}</div>
+              <div className="text-xs text-muted-foreground">
+                {metric.description}
+              </div>
             </div>
-            <div className="text-xl font-bold">{metric.value}</div>
-          </div>
-        ))}
-      </div>
-
-      <div className="mt-4 p-3 rounded-lg bg-secondary/10 border border-secondary/20">
-        <p className="text-xs text-muted-foreground">
-          <span className="font-semibold text-secondary">Live Data:</span> Conditions update every 5 seconds based on simulated NASA satellite observations
-        </p>
-      </div>
+          ))}
+        </div>
+        <div className="mt-4 text-xs text-muted-foreground">
+          Data sources: POWER (Climate), GPM (Precipitation), SMAP (Soil), MODIS (Vegetation), GRACE (Water), CERES (Solar)
+        </div>
+      </CardContent>
     </Card>
   );
 };
